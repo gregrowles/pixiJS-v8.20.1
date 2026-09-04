@@ -418,7 +418,7 @@ export class EventBoundary
                     // Only add the current hit-test target to the hit-test chain if the chain
                     // has already started (i.e. the event target has been found) or if the current
                     // target is interactive (i.e. it becomes the event target).
-                    const isInteractive = currentTarget.isInteractive();
+                    const isInteractive = this._isInteractiveTarget(currentTarget);
 
                     if (nestedHit.length > 0 || isInteractive)
                     {
@@ -435,9 +435,9 @@ export class EventBoundary
         }
 
         const isInteractiveMode = this._isInteractive(eventMode);
-        const isInteractiveTarget = currentTarget.isInteractive();
+        const isInteractiveTarget = this._isInteractiveTarget(currentTarget);
 
-        if (isInteractiveTarget && isInteractiveTarget) this._allInteractiveElements.push(currentTarget);
+        if (isInteractiveTarget) this._allInteractiveElements.push(currentTarget);
 
         // we don't carry on hit testing something once we have found a hit,
         // now only care about gathering the interactive elements
@@ -518,7 +518,7 @@ export class EventBoundary
                     // Only add the current hit-test target to the hit-test chain if the chain
                     // has already started (i.e. the event target has been found) or if the current
                     // target is interactive (i.e. it becomes the event target).
-                    const isInteractive = currentTarget.isInteractive();
+                    const isInteractive = this._isInteractiveTarget(currentTarget);
 
                     if (nestedHit.length > 0 || isInteractive) nestedHit.push(currentTarget);
 
@@ -528,7 +528,7 @@ export class EventBoundary
         }
 
         const isInteractiveMode = this._isInteractive(eventMode);
-        const isInteractiveTarget = currentTarget.isInteractive();
+        const isInteractiveTarget = this._isInteractiveTarget(currentTarget);
 
         // Finally, hit test this Container itself.
         if (isInteractiveMode && testFn(currentTarget, location))
@@ -544,6 +544,17 @@ export class EventBoundary
     private _isInteractive(int: EventMode): int is 'static' | 'dynamic'
     {
         return int === 'static' || int === 'dynamic';
+    }
+
+    // Safe check for whether a target is interactive.
+    // Some runtime objects may expose `isInteractive` as a method, others only an `interactive` boolean.
+    private _isInteractiveTarget(container: any): boolean
+    {
+        if (!container) return false;
+
+        return typeof container.isInteractive === 'function'
+            ? container.isInteractive()
+            : !!container.interactive;
     }
 
     private _interactivePrune(container: Container): boolean
@@ -646,7 +657,7 @@ export class EventBoundary
      */
     protected notifyTarget(e: FederatedEvent, type?: string): void
     {
-        if (!e.currentTarget.isInteractive())
+        if (!this._isInteractiveTarget(e.currentTarget))
         {
             return;
         }

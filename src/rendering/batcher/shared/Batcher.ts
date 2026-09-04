@@ -97,7 +97,28 @@ GlobalResourceRegistry.register({
 
 function getBatchFromPool()
 {
-    return batchPoolIndex > 0 ? batchPool[--batchPoolIndex] : new Batch();
+    const batch = batchPoolIndex > 0 ? batchPool[--batchPoolIndex] : new Batch();
+
+    // If a batch was destroyed via GlobalResourceRegistry.clear(), some transient
+    // properties (like textures) may be null. Recreate/ reset them here so the
+    // rest of the code can assume they're present.
+    if (!batch.textures)
+    {
+        batch.textures = new BatchTextureArray();
+    }
+
+    // Reset transient state to safe defaults (avoid leaking old references)
+    batch.gpuBindGroup = null;
+    batch.bindGroup = null;
+    batch.batcher = null;
+    batch.elements = null;
+    batch.action = 'startBatch';
+    batch.start = 0;
+    batch.size = 0;
+    batch.blendMode = 'normal';
+    batch.topology = 'triangle-strip';
+
+    return batch;
 }
 
 function returnBatchToPool(batch: Batch)
@@ -493,7 +514,7 @@ export abstract class Batcher
         let textureBatch = batch.textures;
 
         // batch.textures will return null if PixiOverlay is updated rapidly (>10x/sec)
-        if ( textureBatch ) textureBatch.clear();
+        if (textureBatch) textureBatch.clear();
 
         const firstElement = elements[this.elementStart];
         let blendMode = getAdjustedBlendModeBlend(firstElement.blendMode, firstElement.texture._source);
@@ -598,7 +619,8 @@ export abstract class Batcher
                 topology = element.topology;
 
                 batch = getBatchFromPool();
-                textureBatch = batch.textures;
+                // defensive: ensure texture array exists (covers any other callers)
+                textureBatch = batch.textures || (batch.textures = new BatchTextureArray());
                 textureBatch.clear();
                 batchElements = [];
 
