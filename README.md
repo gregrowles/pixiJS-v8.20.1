@@ -1,2 +1,3 @@
 # pixiJS-v8.20.1
-fork of v8.20.1 (testing rapid refresh limits)
+
+Fork of PixiJS v8.20.1 with customizations focused on local development issues, including investigation of rapid refresh limits and related developer workflow problems.
