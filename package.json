@@ -27,7 +27,7 @@
     "skills"
   ],
   "scripts": {
-    "prepare": "husky install",
+    "prepare": "husky install && npm run build",
     "start": "npm run dev --prefix playground & npm run watch:lib",
     "clean": "rimraf \"{lib,dist}\" .pr_uploads .s3_uploads --glob",
     "build": "node ./scripts/build.mts",
